@@ -35,8 +35,12 @@ var lastJSStartExecutionTime = 0;
  */
 var fromNowComponents = [];
 var refreshFromNow = function() {
-  for (var index in fromNowComponents) {
-    fromNowComponents[index].updateText();
+  var index = 0;
+  var component = null;
+  var fromNow = null;
+  for (index in fromNowComponents) {
+    component = fromNowComponents[index];
+    component.domNode.textContent = moment(component.props.time).fromNow();
   }
 };
 
@@ -48,10 +52,6 @@ var FromNow = React.createClass({
   componentWillUnmount: function() {
     var index = callbacks.indexOf(this);
     fromNowComponents.splice(index, 1);
-  },
-  updateText: function() {
-    var fromNow = moment(this.props.time).fromNow();
-    this.domNode.textContent = fromNow;
   },
   shouldComponentUpdate: function(nextProps) {
     return nextProps.time !== this.props.time;
@@ -72,7 +72,8 @@ var FromNow = React.createClass({
  */
 var FlickrImage = React.createClass({
   shouldComponentUpdate: function(nextProps) {
-    return this.props.image !== nextProps.image;
+    return this.props.image !== nextProps.image
+      || this.props.image.lastUpdate !== nextProps.image.lastUpdate;
   },
   render: function() {
     // Render away!
@@ -83,7 +84,7 @@ var FlickrImage = React.createClass({
           <img src={this.props.image.imgUrl} />
         </div>
         <h2>{this.props.image.ownerName} - {this.props.image.license}</h2>
-        <h3>Last updated: <FromNow time={this.props.image.lastUpdated}/></h3>
+        <h3>Last updated: <FromNow time={this.props.image.lastUpdate * 1000}/></h3>
         <a href={this.props.image.flickrUrl}>{this.props.image.flickrUrl}</a>
       </div>
     );
