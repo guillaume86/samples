@@ -26,17 +26,55 @@ var lastStartDrawTime = 0;
 var lastJSStartExecutionTime = 0;
 
 /**
+ * Could be refactored into a higher order component which set a context prop
+ * that will be accessed by children <FromNow />s and provide
+ * a refreshFromNow() prop to the wrapped Component
+ *
+ * With es7 decorators it could just be a @fromNowContainer on top of the
+ * FlickrImages component class declaration
+ */
+var fromNowComponents = [];
+var refreshFromNow = function() {
+  for (var index in fromNowComponents) {
+    fromNowComponents[index].updateText();
+  }
+};
+
+var FromNow = React.createClass({
+  componentDidMount: function() {
+    this.domNode = React.findDOMNode(this);
+    fromNowComponents.push(this);
+  },
+  componentWillUnmount: function() {
+    var index = callbacks.indexOf(this);
+    fromNowComponents.splice(index, 1);
+  },
+  updateText: function() {
+    var fromNow = moment(this.props.time).fromNow();
+    this.domNode.textContent = fromNow;
+  },
+  shouldComponentUpdate: function(nextProps) {
+    return nextProps.time !== this.props.time;
+  },
+  render: function() {
+    // Will be filled when calling refreshFromNow()
+    return (
+      <span></span>
+    );
+  }
+});
+
+/**
  * The React component for each individual image.
  * It can't have `shouldComponentUpdate` set to false because on each
  * update to the dataset we want to update the "Last updated" string
  * to get set.
  */
 var FlickrImage = React.createClass({
+  shouldComponentUpdate: function(nextProps) {
+    return this.props.image !== nextProps.image;
+  },
   render: function() {
-
-    // Figure out how long ago this photo was taken.
-    var fromNow = moment(this.props.image.lastUpdated).fromNow();
-
     // Render away!
     return (
       <div className="flickr-image">
@@ -45,7 +83,7 @@ var FlickrImage = React.createClass({
           <img src={this.props.image.imgUrl} />
         </div>
         <h2>{this.props.image.ownerName} - {this.props.image.license}</h2>
-        <h3>Last updated: {fromNow}</h3>
+        <h3>Last updated: <FromNow time={this.props.image.lastUpdated}/></h3>
         <a href={this.props.image.flickrUrl}>{this.props.image.flickrUrl}</a>
       </div>
     );
@@ -81,6 +119,8 @@ var FlickrImages = React.createClass({
       this.setState({
         data: newData
       });
+
+      refreshFromNow();
 
       console.timeEnd("React Execution");
 
